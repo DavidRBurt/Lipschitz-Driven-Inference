@@ -1,0 +1,233 @@
+from typing import Optional
+import numpy as np
+from numpy.typing import ArrayLike
+from collections import namedtuple
+from sklearn.neighbors import NearestNeighbors
+from scipy.optimize import brentq
+import scipy.stats as stats
+from ot import emd2
+from abc import abstractmethod
+from estimate_variance import estimate_minimum_variance, fast_estimate_variance
+
+Dataset = namedtuple("Dataset", ["S", "X", "y"])
+ConfidenceInterval = namedtuple("ConfidenceInterval", ["lower", "upper"])
+
+
+class Estimator:
+    def __init__(self, training_data: Dataset, test_data: Dataset):
+        self.training_data = training_data
+        self.test_data = test_data
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """
+        Name of the estimator.
+        """
+        raise NotImplementedError
+
+    @property
+    def M(self):
+        return self.test_data.S.shape[0]
+
+    @property
+    def N(self):
+        return self.training_data.S.shape[0]
+
+    @property
+    def P(self):
+        return self.training_data.X.shape[1]
+
+    @abstractmethod
+    def point_estimate(self, dim: int) -> float:
+        """
+        Compute the point estimate for the estimator.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def confidence_interval(self, dim: int, alpha: float = 0.05) -> ConfidenceInterval:
+        """
+        Compute the confidence interval for the estimator.
+        """
+        raise NotImplementedError
+
+
+class LipschitzDrivenEstimator(Estimator):
+    def __init__(
+        self,
+        training_data: Dataset,
+        test_data: Dataset,
+        lipschitz_bound: float,
+        noise_std: Optional[float] = None,
+        fast_noise=False,
+    ):
+        super().__init__(training_data, test_data)
+        self.lipschitz_bound = lipschitz_bound
+        if noise_std is None:
+            self.noise_std = self.estimate_noise_variance(fast_noise)
+    
+    @staticmethod
+    def name() -> str:
+        return f"Ours"
+
+    def bias_bdd(self, dim: int) -> float:
+        """
+        Compute an upper bound on the bias of the estimator. This is done by using the Lipschitz assumption. We have
+        that the bias is bounded by the Lipschitz constant times a Wasserstein distance.
+        sup_f |sum_m v_m f(S*_m) - sum_n w_n f(S*_n)|.
+        Because coefficients may be positive or negative (and might not sum to 1), we sort them,
+        divide into positive and negative coeffs, normalize,
+        then solve the corresponding Wasserstein distance calculation via linear programming or some other method.
+        Anything that returns an upper bound on the Wasserstein distance is ok with us!
+        """
+
+        # Get the weights
+        v = self.v(dim)
+        w = self.w(dim)
+        # Coefficients of the linear program. Take a negative because we want to maximize the objective.
+        all_coeffs = np.concatenate([v, -w])
+        # Weights should sum to 1, or else shifting leads to unbounded loss.
+        if not np.isclose(np.sum(all_coeffs), 0):
+            return np.inf
+        # get indices of positive coefficients
+        pos_indices = np.where(all_coeffs > 0)[0]
+        # get indices of negative coefficients
+        neg_indices = np.where(all_coeffs <= 0)[0]
+        # Get the corresponding covariates
+        all_covariates = np.concatenate([self.test_data.S, self.training_data.S])
+        pos_covariates = all_covariates[pos_indices]
+        neg_covariates = all_covariates[neg_indices]
+        pos_coeffs = all_coeffs[pos_indices]
+        neg_coeffs = all_coeffs[neg_indices]
+        normalization = np.sum(pos_coeffs[:, 0])
+        # If all the weights are 0, return 0.
+        if normalization <= 1e-12:
+            return 0.0
+        pos_coeffs /= normalization
+        neg_coeffs /= normalization
+
+        # Compute the cost matrix
+        dist_matrix = np.linalg.norm(
+            pos_covariates[:, None] - neg_covariates[None], ord=2, axis=-1
+        )
+        # Compute wasserstein distance
+        wass = emd2(pos_coeffs[:, 0], -neg_coeffs[:, 0], dist_matrix)
+
+        return self.lipschitz_bound * wass * normalization
+
+    @abstractmethod
+    def estimate_noise_variance(self, fast_noise: bool = False) -> float:
+        """
+        Compute the variance estimate for the estimator.
+        """
+        if fast_noise:
+            return fast_estimate_variance(
+                self.training_data.S, self.training_data.y, self.lipschitz_bound
+            )
+        return estimate_minimum_variance(
+            self.training_data.S, self.training_data.y, self.lipschitz_bound
+        )
+
+    def confidence_interval(self, dim: int, alpha: float = 0.05) -> ConfidenceInterval:
+        """
+        Compute the confidence interval for the estimator. We do this with asymptotic normality.
+        And we use asymmetric confidence intervals depending on the bias which gives a small refinement
+        by avoiding a triangle inequality.
+        """
+
+        point_estimate = self.point_estimate(dim)
+        bias = self.bias_bdd(dim)
+        randomness_std = self.randomness_std_bdd(dim)
+        if randomness_std == 0:
+            return ConfidenceInterval(
+                lower=point_estimate - bias, upper=point_estimate + bias
+            )
+
+        def fn(delta):
+            right_tail = stats.norm.cdf(delta / randomness_std)
+            left_tail = stats.norm.cdf(-(bias + delta) / randomness_std)
+            return right_tail - left_tail - (1 - alpha)
+
+        delta_upper = stats.norm.ppf(1 - alpha / 2) * randomness_std
+        delta_lower = stats.norm.ppf(1 - alpha) * randomness_std
+        randomness_tails = brentq(fn, delta_lower, delta_upper)
+
+        return ConfidenceInterval(
+            lower=point_estimate - bias - randomness_tails,
+            upper=point_estimate + bias + randomness_tails,
+        )
+
+    def v(self, dim: int) -> ArrayLike:
+        """
+        Compute the v vector for the linear estimator.
+        """
+        e_p = np.zeros(self.test_data.X.shape[1])
+        e_p[dim] = 1
+
+        # Evaluate ep^T (X^T Sigma-1 X)^-1 X^T Sigma-1 without cholesky but using solve
+        # 1) compute Sigma-1 X
+        X_tilde = np.linalg.solve(self.Sigmastar, self.test_data.X)
+        # 2) compute X^T Sigma-1
+        inner_matrix = self.test_data.X.T @ X_tilde
+        # 3) compute (X^T Sigma-1 X)^-1 X^T
+        inner_matrix_inv_xt = np.linalg.solve(inner_matrix, self.test_data.X.T)
+        # 4) compute ep^T (X^T Sigma-1 X)^-1 X^T
+        ep_inner_matrix_inv_xt = e_p.T @ inner_matrix_inv_xt
+        # 5) compute ep^T (X^T Sigma-1 X)^-1 X^T Sigma-1
+        result = np.linalg.solve(self.Sigmastar, ep_inner_matrix_inv_xt.T).T
+        return result[:, None]
+
+    def randomness_std_bdd(self, dim: int) -> float:
+        """
+        Compute the randomness bound for the confidence interval.
+        """
+        return self.noise_std * np.linalg.norm(self.w(dim), ord=2)
+
+    @abstractmethod
+    def _build_Psi(self) -> ArrayLike:
+        """
+        Compute the coupling matrix Psi for the estimator.
+        """
+        raise NotImplementedError
+
+    @property
+    def Psi(self) -> ArrayLike:
+        """
+        Compute the coupling matrix Psi for the estimator.
+        """
+        return self._Psi
+
+    def w(self, dim: int) -> ArrayLike:
+        """
+        Compute the weights w for the linear estimator.
+        """
+        return self.Psi.T @ self.v(dim)
+
+
+class NNLipschitzDrivenEstimator(LipschitzDrivenEstimator):
+
+    def __init__(
+        self,
+        training_data: Dataset,
+        test_data: Dataset,
+        lipschitz_bound: float,
+        num_neighbors: int,
+    ):
+        super().__init__(training_data, test_data, lipschitz_bound)
+        self.num_neighbors = num_neighbors
+
+    def _build_Psi(self) -> ArrayLike:
+        """
+        Compute the coupling matrix Psi for the nearest neighbor coupling.
+        """
+        nn = NearestNeighbors(n_neighbors=self.num_neighbors)
+        nn.fit(self.training_data.S)
+        # Get the indices of the nearest neighbors
+        dists, indices = nn.kneighbors(self.test_data.S)
+        # Set the coupling matrix by scattering 1/num_neighbors to the correct indices
+        Psi = np.zeros((self.test_data.S.shape[0], self.training_data.S.shape[0]))
+        Psi[np.arange(self.test_data.S.shape[0])[:, None], indices] = (
+            1 / self.num_neighbors
+        )
+        return Psi
