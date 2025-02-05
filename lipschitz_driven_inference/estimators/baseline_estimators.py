@@ -7,7 +7,7 @@ from typing import List, Union
 import statsmodels.api as sm
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
-from estimators import (
+from .estimators import (
     Estimator,
     Dataset,
     ConfidenceInterval,
@@ -60,7 +60,7 @@ class OLS(Estimator):
         return self._confidence_interval(dim, alpha, sandwich=False)
 
 
-class SandwichEstimator(OLS):
+class Sandwich(OLS):
 
     @staticmethod
     def name() -> str:

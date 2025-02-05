@@ -7,8 +7,8 @@ from scipy.optimize import brentq
 import scipy.stats as stats
 from ot import emd2
 from abc import abstractmethod
-from estimators import Estimator, Dataset, ConfidenceInterval
-from estimate_variance import estimate_minimum_variance, fast_estimate_variance
+from .estimators import Estimator, Dataset, ConfidenceInterval
+from ..estimate_variance import estimate_minimum_variance, fast_estimate_variance
 from sklearn.metrics.pairwise import haversine_distances
 
 
@@ -19,18 +19,25 @@ class LipschitzDrivenEstimator(Estimator):
         test_data: Dataset,
         lipschitz_bound: float,
         noise_std: Optional[float] = None,
-        fast_noise=Optional[False],
-        data_on_sphere=Optional[False],
+        fast_noise: Optional[bool] = False,
+        data_on_sphere: Optional[bool] = False,
     ):
         super().__init__(training_data, test_data)
         self.lipschitz_bound = lipschitz_bound
         self.data_on_sphere = data_on_sphere
         if noise_std is None:
             self.noise_std = self.estimate_noise_variance(fast_noise)
+        self._Psi = self._build_Psi()
 
     @staticmethod
     def name() -> str:
         return f"Ours"
+
+    def point_estimate(self, dim: int) -> float:
+        """
+        Compute the point estimate for the estimator.
+        """
+        return np.sum(self.v(dim) * (self.Psi @ self.training_data.y))
 
     def bias_bdd(self, dim: int) -> float:
         """
@@ -124,10 +131,10 @@ class LipschitzDrivenEstimator(Estimator):
 
     def v(self, dim: int) -> ArrayLike:
         """
-        Compute the v vector for the linear estimator, v= ep^T (X^T X)^-1 X^T.
+        Compute the v vector for the linear estimator, v= ep^T (X*^T X*)^-1 X*^T.
         """
-        # Moore-Penrose pseudoinverse is (X^T X)^-1 X^T. Pickout the dim-th row.
-        return np.linalg.pinv(self.training_data.X)[dim]
+        # Moore-Penrose pseudoinverse is (X*^T X*)^-1 X*^T. Pickout the dim-th row.
+        return np.linalg.pinv(self.test_data.X)[dim][:, None]
 
     def randomness_std_bdd(self, dim: int) -> float:
         """
@@ -168,6 +175,8 @@ class NNLipschitzDrivenEstimator(LipschitzDrivenEstimator):
         data_on_sphere: Optional[bool] = False,
         num_neighbors: Optional[int] = 1,
     ):
+        self.num_neighbors = num_neighbors
+
         super().__init__(
             training_data,
             test_data,
@@ -176,7 +185,6 @@ class NNLipschitzDrivenEstimator(LipschitzDrivenEstimator):
             fast_noise,
             data_on_sphere,
         )
-        self.num_neighbors = num_neighbors
 
     def _build_Psi(self) -> ArrayLike:
         """
@@ -187,7 +195,7 @@ class NNLipschitzDrivenEstimator(LipschitzDrivenEstimator):
             nn = NearestNeighbors(n_neighbors=self.num_neighbors, metric="haversine")
         else:
             nn = NearestNeighbors(n_neighbors=self.num_neighbors)
-        
+
         nn.fit(self.training_data.S)
         # Get the indices of the nearest neighbors
         _, indices = nn.kneighbors(self.test_data.S)

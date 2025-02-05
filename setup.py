@@ -13,8 +13,8 @@ setup(
         'scipy',
         'matplotlib',
         'scikit-learn',
-        'tensorflow',
-        'gpflow',
+        # 'tensorflow',
+        # 'gpflow',
         'statsmodels',
         ],
 )
