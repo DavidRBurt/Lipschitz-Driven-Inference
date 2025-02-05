@@ -7,7 +7,7 @@ from typing import List, Union
 import statsmodels.api as sm
 from sklearn.model_selection import GridSearchCV
 from sklearn.neighbors import KernelDensity
-from spatial_zest.estimators import (
+from estimators import (
     Estimator,
     Dataset,
     ConfidenceInterval,
