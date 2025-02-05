@@ -88,11 +88,10 @@ class LipschitzDrivenEstimator(Estimator):
 
     def confidence_interval(self, dim: int, alpha: float = 0.05) -> ConfidenceInterval:
         """
-        Compute the confidence interval for the estimator. We do this with asymptotic normality.
-        And we use asymmetric confidence intervals depending on the bias which gives a small refinement
-        by avoiding a triangle inequality.
+        We compute confidence intervals by using the bias and the randomness bound.
+        We then perform root finding to find the correct Delta that satisfies the confidence level.
+        See the paper for details.
         """
-
         point_estimate = self.point_estimate(dim)
         bias = self.bias_bdd(dim)
         randomness_std = self.randomness_std_bdd(dim)
@@ -117,23 +116,10 @@ class LipschitzDrivenEstimator(Estimator):
 
     def v(self, dim: int) -> ArrayLike:
         """
-        Compute the v vector for the linear estimator.
+        Compute the v vector for the linear estimator, v= ep^T (X^T X)^-1 X^T. 
         """
-        e_p = np.zeros(self.test_data.X.shape[1])
-        e_p[dim] = 1
-
-        # Evaluate ep^T (X^T Sigma-1 X)^-1 X^T Sigma-1 without cholesky but using solve
-        # 1) compute Sigma-1 X
-        X_tilde = np.linalg.solve(self.Sigmastar, self.test_data.X)
-        # 2) compute X^T Sigma-1
-        inner_matrix = self.test_data.X.T @ X_tilde
-        # 3) compute (X^T Sigma-1 X)^-1 X^T
-        inner_matrix_inv_xt = np.linalg.solve(inner_matrix, self.test_data.X.T)
-        # 4) compute ep^T (X^T Sigma-1 X)^-1 X^T
-        ep_inner_matrix_inv_xt = e_p.T @ inner_matrix_inv_xt
-        # 5) compute ep^T (X^T Sigma-1 X)^-1 X^T Sigma-1
-        result = np.linalg.solve(self.Sigmastar, ep_inner_matrix_inv_xt.T).T
-        return result[:, None]
+        # Moore-Penrose pseudoinverse is (X^T X)^-1 X^T. Pickout the dim-th row.
+        return np.linalg.pinv(self.training_data.X)[dim]
 
     def randomness_std_bdd(self, dim: int) -> float:
         """
@@ -181,7 +167,7 @@ class NNLipschitzDrivenEstimator(LipschitzDrivenEstimator):
         nn = NearestNeighbors(n_neighbors=self.num_neighbors)
         nn.fit(self.training_data.S)
         # Get the indices of the nearest neighbors
-        dists, indices = nn.kneighbors(self.test_data.S)
+        _, indices = nn.kneighbors(self.test_data.S)
         # Set the coupling matrix by scattering 1/num_neighbors to the correct indices
         Psi = np.zeros((self.test_data.S.shape[0], self.training_data.S.shape[0]))
         Psi[np.arange(self.test_data.S.shape[0])[:, None], indices] = (
