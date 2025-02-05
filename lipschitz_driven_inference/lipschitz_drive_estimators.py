@@ -9,6 +9,8 @@ from ot import emd2
 from abc import abstractmethod
 from estimators import Estimator, Dataset, ConfidenceInterval
 from estimate_variance import estimate_minimum_variance, fast_estimate_variance
+from sklearn.metrics.pairwise import haversine_distances
+
 
 class LipschitzDrivenEstimator(Estimator):
     def __init__(
@@ -17,13 +19,15 @@ class LipschitzDrivenEstimator(Estimator):
         test_data: Dataset,
         lipschitz_bound: float,
         noise_std: Optional[float] = None,
-        fast_noise=False,
+        fast_noise=Optional[False],
+        data_on_sphere=Optional[False],
     ):
         super().__init__(training_data, test_data)
         self.lipschitz_bound = lipschitz_bound
+        self.data_on_sphere = data_on_sphere
         if noise_std is None:
             self.noise_std = self.estimate_noise_variance(fast_noise)
-    
+
     @staticmethod
     def name() -> str:
         return f"Ours"
@@ -64,10 +68,14 @@ class LipschitzDrivenEstimator(Estimator):
         pos_coeffs /= normalization
         neg_coeffs /= normalization
 
-        # Compute the cost matrix
-        dist_matrix = np.linalg.norm(
-            pos_covariates[:, None] - neg_covariates[None], ord=2, axis=-1
-        )
+        if self.data_on_sphere:
+            # Use haversine distance for spherical data, multiply by Earth's radius to get km
+            dist_matrix = haversine_distances(pos_covariates, neg_covariates) * 6371
+        else:
+            # Compute the euclidean distance
+            dist_matrix = np.linalg.norm(
+                pos_covariates[:, None] - neg_covariates, axis=-1
+            )
         # Compute wasserstein distance
         wass = emd2(pos_coeffs[:, 0], -neg_coeffs[:, 0], dist_matrix)
 
@@ -76,13 +84,13 @@ class LipschitzDrivenEstimator(Estimator):
     @abstractmethod
     def estimate_noise_variance(self, fast_noise: bool = False) -> float:
         """
-        Compute the variance estimate for the estimator.
+        Estimate the noise variance of the model. This is either done via LOOCV with nearest neighbors
+        if fast_noise is True, or via ERM over the class of Lipschitz functions if fast_noise is False.
         """
-        if fast_noise:
-            return fast_estimate_variance(
-                self.training_data.S, self.training_data.y, self.lipschitz_bound
-            )
-        return estimate_minimum_variance(
+        estimate_variance_fn = (
+            fast_estimate_variance if fast_noise else estimate_minimum_variance
+        )
+        return estimate_variance_fn(
             self.training_data.S, self.training_data.y, self.lipschitz_bound
         )
 
@@ -116,7 +124,7 @@ class LipschitzDrivenEstimator(Estimator):
 
     def v(self, dim: int) -> ArrayLike:
         """
-        Compute the v vector for the linear estimator, v= ep^T (X^T X)^-1 X^T. 
+        Compute the v vector for the linear estimator, v= ep^T (X^T X)^-1 X^T.
         """
         # Moore-Penrose pseudoinverse is (X^T X)^-1 X^T. Pickout the dim-th row.
         return np.linalg.pinv(self.training_data.X)[dim]
@@ -155,16 +163,31 @@ class NNLipschitzDrivenEstimator(LipschitzDrivenEstimator):
         training_data: Dataset,
         test_data: Dataset,
         lipschitz_bound: float,
-        num_neighbors: int,
+        noise_std: Optional[float] = None,
+        fast_noise: Optional[bool] = False,
+        data_on_sphere: Optional[bool] = False,
+        num_neighbors: Optional[int] = 1,
     ):
-        super().__init__(training_data, test_data, lipschitz_bound)
+        super().__init__(
+            training_data,
+            test_data,
+            lipschitz_bound,
+            noise_std,
+            fast_noise,
+            data_on_sphere,
+        )
         self.num_neighbors = num_neighbors
 
     def _build_Psi(self) -> ArrayLike:
         """
         Compute the coupling matrix Psi for the nearest neighbor coupling.
         """
-        nn = NearestNeighbors(n_neighbors=self.num_neighbors)
+        if self.data_on_sphere:
+            # Use haversine distance for spherical data
+            nn = NearestNeighbors(n_neighbors=self.num_neighbors, metric="haversine")
+        else:
+            nn = NearestNeighbors(n_neighbors=self.num_neighbors)
+        
         nn.fit(self.training_data.S)
         # Get the indices of the nearest neighbors
         _, indices = nn.kneighbors(self.test_data.S)
