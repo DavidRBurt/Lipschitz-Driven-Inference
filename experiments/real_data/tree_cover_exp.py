@@ -3,15 +3,17 @@ import argparse
 from pathlib import Path
 import gpflow
 from experiments.experiments import RealDataExperiment
-from spatial_zest.estimators import (
+from lipschitz_driven_inference.estimators import (
+    Dataset,
     NNLipschitzDrivenEstimator,
+    Estimator,
     OLS, 
     Sandwich, 
     KDEIW, 
     GLS, 
     GPBCI
 )
-from typing import Tuple
+from typing import Tuple, List, Dict
 from numpy.typing import ArrayLike
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,6 +38,7 @@ def parse():
     parser.add_argument("--seed", type=int, default=100)
     parser.add_argument("--seeds_to_plot", type=int, default=5)
     parser.add_argument("--data_on_sphere", type=bool, default=True)
+    parser.add_argument("--region", type=str, default="south")
     return parser.parse_args()
 
 
@@ -138,7 +141,7 @@ if __name__ == "__main__":
     args = parse()
     # Set up the experiment
     
-    file_path = Path(__file__).parents[1]
+    file_path = Path(__file__).parent
     results_dir = f"results/real_data"
     results_dir = str(Path(file_path, results_dir))
     experiment = TreeCoverExperiment(

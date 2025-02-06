@@ -59,6 +59,23 @@ class OLS(Estimator):
     def confidence_interval(self, dim: int, alpha: float = 0.05) -> ConfidenceInterval:
         return self._confidence_interval(dim, alpha, sandwich=False)
 
+    def _sd_estimate(self, dim: int, sandwich: bool = False) -> float:
+        """
+        Compute the standard deviation estimate for the estimator.
+        """
+        if sandwich:
+            cov_type = "hc1"
+        else:
+            cov_type = "nonrobust"
+        return (
+            sm.OLS(self.training_data.y[:, 0], self.training_data.X)
+            .fit(cov_type=cov_type)
+            .bse[dim]
+        )
+
+    def sd_estimate(self, dim: int) -> float:
+        return self._sd_estimate(dim, sandwich=False)
+
 
 class Sandwich(OLS):
 
@@ -71,6 +88,9 @@ class Sandwich(OLS):
         Compute the confidence interval for the OLS estimator.
         """
         return self._confidence_interval(dim, alpha, sandwich=True)
+
+    def sd_estimate(self, dim: int) -> float:
+        return self._sd_estimate(dim, sandwich=True)
 
 
 class KDEIW(Estimator):
@@ -138,6 +158,20 @@ class KDEIW(Estimator):
             .conf_int(alpha=alpha)[dim]
         )
         return ConfidenceInterval(lower=conf_int[0], upper=conf_int[1])
+
+    def sd_estimate(self, dim: int) -> float:
+        """
+        Compute the standard deviation estimate for the estimator.
+        """
+        return (
+            sm.WLS(
+                self.training_data.y[:, 0],
+                self.training_data.X,
+                weights=self.estimate_iw(),
+            )
+            .fit()
+            .bse[dim]
+        )
 
 
 class GLS(Estimator):
@@ -222,6 +256,7 @@ class GLS(Estimator):
             .params[dim]
         )
 
+
     def confidence_interval(self, dim: int, alpha: float) -> ConfidenceInterval:
         """
         Compute the confidence interval for the OLS estimator.
@@ -254,6 +289,16 @@ class GLS(Estimator):
         return ConfidenceInterval(
             lower=self.point_estimate(dim) - z_alpha * se_coef,
             upper=self.point_estimate(dim) + z_alpha * se_coef,
+        )
+
+    def sd_estimate(self, dim: int) -> float:
+        """
+        Compute the standard deviation estimate for the estimator.
+        """
+        return (
+            sm.GLS(self.training_data.y[:, 0], self.training_data.X, sigma=self.Sigma)
+            .fit()
+            .bse[dim]
         )
 
 
@@ -366,3 +411,9 @@ class GPBCI(Estimator):
             lower=mean - z_alpha * std,
             upper=mean + z_alpha * std,
         )
+
+    def sd_estimate(self, dim: int) -> float:
+        """
+        Compute the standard deviation estimate for the estimator.
+        """
+        return float(np.sqrt(self.posterior_variance(dim)))

@@ -44,3 +44,9 @@ class Estimator:
         """
         raise NotImplementedError
     
+    @abstractmethod
+    def sd_estimate(self, dim: int) -> float:
+        """
+        Compute the standard deviation estimate for the estimator.
+        """
+        raise NotImplementedError

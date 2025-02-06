@@ -161,6 +161,12 @@ class LipschitzDrivenEstimator(Estimator):
         Compute the weights w for the linear estimator.
         """
         return self.Psi.T @ self.v(dim)
+    
+    def sd_estimate(self, dim: int) -> float:
+        """
+        Compute the standard deviation estimate for the estimator.
+        """
+        return self.randomness_std_bdd(dim)
 
 
 class NNLipschitzDrivenEstimator(LipschitzDrivenEstimator):

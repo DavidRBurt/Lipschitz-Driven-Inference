@@ -25,6 +25,7 @@ tree_cover_data = Path(datadir, 'tree_cover_lin_reg_1k_ground_truth_final.csv')
 
 def download_data():
     # Check if the data is already downloaded. if it is not, download it
+    os.makedirs(datadir, exist_ok=True)
     if not os.path.exists(tree_cover_data):
         import requests
         url = 'https://www.dropbox.com/scl/fo/akdq400xjyhih3z2oka9k/AAIs9pgdj-iuLlQiSnlIr3Y/tree_cover_lin_reg_1k_ground_truth_final.csv?rlkey=c9uvjxs5hv2mfku0fppsrgdwl&dl=1'
