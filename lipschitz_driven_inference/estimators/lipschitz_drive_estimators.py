@@ -98,7 +98,7 @@ class LipschitzDrivenEstimator(Estimator):
             fast_estimate_variance if fast_noise else estimate_minimum_variance
         )
         return estimate_variance_fn(
-            self.training_data.S, self.training_data.y, self.lipschitz_bound
+            self.training_data.S, self.training_data.y, self.lipschitz_bound, self.data_on_sphere
         )
 
     def confidence_interval(self, dim: int, alpha: float = 0.05) -> ConfidenceInterval:
