@@ -52,7 +52,7 @@ class TwoDimensionalShiftLipschitzExperiment(TwoDimensionalShiftExperiment):
             }
         return results
 
-    def combined_plot(self):
+    def _plot_results(self):
         """
         Create a subplot consisting of:
         - CI Width vs Shift
@@ -395,6 +395,7 @@ if __name__ == "__main__":
     )
     # Run the experiment
     experiment.run()
+    # experiment.load_results()
     # Save the results
     experiment.save_results()
     # Plot the results

@@ -5,7 +5,7 @@ from typing import List, Dict
 import json_tricks
 import numpy as np
 import matplotlib.pyplot as plt
-from spatial_zest.estimators import Estimator
+from lipschitz_driven_inference.estimators import Estimator
 from joblib import Parallel, delayed
 from statsmodels.regression.linear_model import OLS
 
