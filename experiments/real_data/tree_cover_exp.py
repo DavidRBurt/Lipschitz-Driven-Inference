@@ -138,7 +138,7 @@ if __name__ == "__main__":
     # Set up the experiment
     
     file_path = Path(__file__).parent
-    results_dir = f"results/real_data"
+    results_dir = f"results/real_data/{args.region}"
     results_dir = str(Path(file_path, results_dir))
     experiment = TreeCoverExperiment(
         num_seeds=args.num_seeds,

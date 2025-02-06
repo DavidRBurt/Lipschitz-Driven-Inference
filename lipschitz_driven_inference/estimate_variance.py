@@ -42,7 +42,7 @@ def fast_estimate_variance(
     data_on_sphere: bool = False,
 ):
     """
-        # Use Nearest Neighbors regression to estimate the variance. 
+    # Use Nearest Neighbors regression to estimate the variance. 
     # This is a fast heuristic that is not guaranteed to be consistent. 
     # We perform regression using all responses but the one at the current location.
     # We then compute the variance of the residuals.

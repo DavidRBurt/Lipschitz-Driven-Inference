@@ -333,6 +333,7 @@ class RealDataExperiment(Experiment):
         self.num_seeds = num_seeds
         self.parallel_threads = parallel_threads
         self.seeds_to_plot = seeds_to_plot
+        self.true_params = None
 
     def run(self):
         """
