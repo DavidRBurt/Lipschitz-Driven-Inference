@@ -182,7 +182,6 @@ class NNLipschitzDrivenEstimator(LipschitzDrivenEstimator):
         num_neighbors: Optional[int] = 1,
     ):
         self.num_neighbors = num_neighbors
-
         super().__init__(
             training_data,
             test_data,
