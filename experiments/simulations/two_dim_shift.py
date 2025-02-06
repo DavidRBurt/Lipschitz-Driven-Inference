@@ -151,8 +151,8 @@ if __name__ == "__main__":
         0.6,
         0.8,
     ]  # range of shift values. Should be in [0, 1]
-    file_path = Path(__file__).parents[1]
-    results_dir = f"results/linear/two_dim_shift/n={args.n}_p={1}_m={args.m}_noise_std={args.noise_std}"
+    file_path = Path(__file__).parent
+    results_dir = f"results/two_dim_shift/n={args.n}_p={1}_m={args.m}_noise_std={args.noise_std}"
     results_dir = str(Path(file_path, results_dir))
     experiment = TwoDimensionalShiftExperiment(
         name="two_dim_shift",

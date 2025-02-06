@@ -119,11 +119,11 @@ if __name__ == "__main__":
         "include_intercept": True,
     }
     all_shifts = [-0.8, -0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6, 0.8]  # range of shift values. Should be in [0, 1]
-    file_path = Path(__file__).parents[1]
-    results_dir = f"results/linear/two_dim_shift_trig/n={args.n}_p={3}_m={args.m}_noise_std={args.noise_std}"
+    file_path = Path(__file__).parent
+    results_dir = f"results/two_dim_shift_threecov/n={args.n}_p={3}_m={args.m}_noise_std={args.noise_std}"
     results_dir = str(Path(file_path, results_dir))
     experiment = TwoDimensionalShiftExperiment(
-        name="two_dim_shift_trig",
+        name="two_dim_shift_threecov",
         results_dir=results_dir,
         dim=1,  # dimension of interest. This is X_1 since there is an intercept
         num_seeds=args.num_seeds,

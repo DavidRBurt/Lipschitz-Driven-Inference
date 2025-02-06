@@ -371,8 +371,8 @@ if __name__ == "__main__":
         0.6,
         0.8,
     ]  # range of shift values. Should be in [0, 1]
-    file_path = Path(__file__).parents[1]
-    results_dir = f"results/linear/lipschitz_simulation/n={args.n}_p={1}_m={args.m}_noise_std={args.noise_std}"
+    file_path = Path(__file__).parent
+    results_dir = f"results/lipschitz_simulation/n={args.n}_p={1}_m={args.m}_noise_std={args.noise_std}"
     results_dir = str(Path(file_path, results_dir))
     experiment = TwoDimensionalShiftLipschitzExperiment(
         name="lipschitz_simulation",
@@ -395,7 +395,6 @@ if __name__ == "__main__":
     )
     # Run the experiment
     experiment.run()
-    # experiment.load_results()
     # Save the results
     experiment.save_results()
     # Plot the results
