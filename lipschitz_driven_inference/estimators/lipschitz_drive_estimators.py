@@ -26,7 +26,7 @@ class LipschitzDrivenEstimator(Estimator):
         self.lipschitz_bound = lipschitz_bound
         self.data_on_sphere = data_on_sphere
         if noise_std is None:
-            self.noise_std = self.estimate_noise_variance(fast_noise)
+            self.noise_std = np.sqrt(self.estimate_noise_variance(fast_noise))
         self._Psi = self._build_Psi()
 
     @staticmethod
