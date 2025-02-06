@@ -31,7 +31,7 @@ def estimate_minimum_variance(
     constraints = [A.T @ x <= cost]
     objective = cp.Minimize(cp.sum_squares(x - responses[:, 0]))
     prob = cp.Problem(objective, constraints)
-    prob.solve(cp.CLARABEL) 
+    prob.solve(cp.CLARABEL)
 
     return prob.value / n
 
