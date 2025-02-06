@@ -25,19 +25,15 @@ def parse():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--num_seeds", type=int, default=250)
-    parser.add_argument("--noise_std", type=float, default=1.0)
     parser.add_argument("--num_neighbors", type=int, default=1)
     parser.add_argument("--lipschitz_bound", type=float, default=0.2)
-    parser.add_argument("--dim", type=int, default=1)
     # List of bandwidths for tree cover experiment
     parser.add_argument("--list_bandwidths", 
                         nargs="+", 
                         default=[0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1],  
                         help="List of bandwidths to try (space-separated).")
     parser.add_argument("--num_threads", type=int, default=5)
-    parser.add_argument("--seed", type=int, default=100)
     parser.add_argument("--seeds_to_plot", type=int, default=5)
-    parser.add_argument("--data_on_sphere", type=bool, default=True)
     parser.add_argument("--region", type=str, default="west")
     return parser.parse_args()
 
@@ -162,7 +158,7 @@ if __name__ == "__main__":
             {
                 "num_neighbors": args.num_neighbors,
                 "lipschitz_bound": args.lipschitz_bound,
-                "data_on_sphere": args.data_on_sphere,
+                "data_on_sphere": True,
             },
             {},
             {},
@@ -180,6 +176,8 @@ if __name__ == "__main__":
                 "nugget_variance": 0.1
             },
         ],
+        parallel_threads=args.num_threads,
+        region=args.region,
         )
     # Run the experiment
     experiment.plot_data()
