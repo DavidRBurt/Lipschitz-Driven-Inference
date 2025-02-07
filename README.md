@@ -22,8 +22,7 @@ Navigate to the directory `Lipschitz-Driven-Inference/experiments/real_data`. To
 ### Data sources. 
 Data is downloaded from the Dropbox link provided in the readme of `https://github.com/Earth-Intelligence-Lab/uncertainty-quantification`. Relevant citations for using the real data:
 
-Lu, K., Bates, S., and Wang, S. (2024). Quantifying uncer-
-tainty in area and regression coefficient estimation from
+Lu, K., Bates, S., and Wang, S. (2024). Quantifying uncertainty in area and regression coefficient estimation from
 remote sensing maps. arXiv preprint arXiv:2407.13659.
 
 USFS (2023). USFS tree canopy cover v2021.4 (Conterminous United States and Southeastern Alaska).
