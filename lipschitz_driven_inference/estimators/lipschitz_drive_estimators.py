@@ -88,7 +88,6 @@ class LipschitzDrivenEstimator(Estimator):
 
         return self.lipschitz_bound * wass * normalization
 
-    @abstractmethod
     def estimate_noise_variance(self, fast_noise: bool = False) -> float:
         """
         Estimate the noise variance of the model. This is either done via LOOCV with nearest neighbors
