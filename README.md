@@ -1,5 +1,5 @@
 ## Lipschitz-Driven Inference: Bias-corrected Confidence Intervals for Spatial Linear Models
-This repository conatian the reference implementation of the method described in "Lipschitz-Driven Inference: Bias-corrected Confidence Intervals for Spatial Linear Models" by David R. Burt, Renato Berlinghieri, Stephen Bates, and Tamara Broderick. Code was run in `python3.12`.
+This repository contains the reference implementation of the method described in "Lipschitz-Driven Inference: Bias-corrected Confidence Intervals for Spatial Linear Models" by David R. Burt, Renato Berlinghieri, Stephen Bates, and Tamara Broderick. Code was run in `python3.12`.
 
 **Citation**
 ```
@@ -16,7 +16,7 @@ To install, run `pip install .` from the root directory; dependencies are includ
 ### Re-creating Simulation Experiments from the Paper
 Navigate to the directory `Lipschitz-Driven-Inference/experiments/simulations`. To recreate experiments with the same settings as the paper, run `bash run.sh`. Results will be saved in `Lipschitz-Driven-Inference/experiments/simulations/results`.
 
-### Re-creating Simulation Experiments from the Paper
+### Re-creating Real Data Experiments from the Paper
 Navigate to the directory `Lipschitz-Driven-Inference/experiments/real_data`. To recreate experiments with the same settings as the paper, run `bash run.sh`. Results will be saved in `Lipschitz-Driven-Inference/experiments/real_data/results`. 
 
 ### Data sources. 

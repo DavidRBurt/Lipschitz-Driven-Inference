@@ -37,6 +37,7 @@ def save_data(region: str, min_lat: float, max_lat: float, min_lon: float, max_l
     # Load the data
     data = pd.read_csv(tree_cover_data)
     data['Ground Truth Tree Cover'] = data['label'] * 10
+    import pdb; pdb.set_trace()
     data['ML Tree Cover 2021'] = data['NLCD_Percent_Tree_Canopy_Cover']
     data = data.dropna(subset=['aridity_index', 'elevation', 'slope'])
 
@@ -91,6 +92,7 @@ def save_data(region: str, min_lat: float, max_lat: float, min_lon: float, max_l
     np.save(Path(datapath,'S_star.npy'), S_star)
     np.save(Path(datapath,'X_star.npy'), X_star)
     np.save(Path(datapath,'y_star.npy'), y_star)
+
 
 if __name__ == "__main__":
     download_data()

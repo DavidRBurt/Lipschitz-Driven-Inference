@@ -19,6 +19,9 @@ def main():
     datadir = os.path.join(os.path.dirname(__file__), "data")
     filename = os.path.join(datadir, "tree_cover_lin_reg_1k_ground_truth_final.csv")
     data = pd.read_csv(filename)
+    # Rescale ground truth tree cover
+    data["Ground Truth Tree Cover"] = data["label"] * 10
+    
     # ------------------------------------------------------------------------------
     # Create a GeoDataFrame in EPSG:4326 (lat/lon)
     gdf = gpd.GeoDataFrame(
@@ -30,7 +33,7 @@ def main():
     # ------------------------------------------------------------------------------
     # Load & prepare US boundaries (reproject to EPSG:4326 as well)
     # Adjust the path below to your local .shp
-    us_boundary = gpd.read_file("s_05mr24/s_05mr24.shp")
+    us_boundary = gpd.read_file("shape_file/s_05mr24.shp")
     us_boundary = us_boundary.to_crs("EPSG:4326")
     
     exclude_names = [

@@ -325,7 +325,6 @@ class RealDataExperiment(Experiment):
         self.num_seeds = num_seeds
         self.parallel_threads = parallel_threads
         self.seeds_to_plot = seeds_to_plot
-        self.true_params = None
 
     def run(self):
         """
@@ -352,12 +351,12 @@ class RealDataExperiment(Experiment):
         """
         # Pass the seed so generate_data can do the random subsampling
         training_data, test_data = self.generate_data(seed=seed)
+        print(f"Seed {seed}")
         dims = training_data.X.shape[1]
         # Compute the "true" parameter
         true_param = self.get_true_parameter(test_data)
         true_ci = self.get_true_ci(test_data)
         true_sd = self.get_true_sd(test_data)
-
         # Build the estimators and collect results
         results = {}
         for estimator, estimator_kwarg in zip(self.estimators, self.estimator_kwargs):
@@ -369,6 +368,14 @@ class RealDataExperiment(Experiment):
                     **kernel_kwargs, active_dims=np.arange(training_data.S.shape[1])
                 )
                 estimator_kwarg_copy.update({"kernel": kernel_instance})
+
+            # Save the ground truth in the results 
+            for d in range(dims):
+                results[("Ground Truth", d)] = {
+                    "point_estimate": true_param[d],
+                    "ci": true_ci[d],
+                    "sd": true_sd[d],
+                }
 
             estimator_instance = estimator(
                 training_data, test_data, **estimator_kwarg_copy
@@ -415,7 +422,6 @@ class RealDataExperiment(Experiment):
 
     def get_true_parameter(self, test_data):
         true_params = OLS(test_data.y[:, None], test_data.X).fit().params
-        self.true_params = true_params
         return true_params
 
     def get_true_ci(self, test_data):
@@ -434,7 +440,6 @@ class RealDataExperiment(Experiment):
         true_ci = []
         for p in range(test_data.X.shape[1]):
             true_ci.append((true_ols[p, 0], true_ols[p, 1]))
-        self.true_ci = true_ci
         return true_ci
 
     def get_true_sd(self, test_data):
@@ -510,6 +515,8 @@ class RealDataExperiment(Experiment):
             "0"
         ]  # => {'MethodA': {'0': {...}, '1': {...}}, ...}
         all_methods = list(first_seed_result.keys())
+        # Drop ground truth 
+        all_methods = [method for method in all_methods if method != "Ground Truth"]
         all_methods.sort()
 
         # Define a lookup dict to rename dimensions
@@ -790,22 +797,21 @@ class RealDataExperiment(Experiment):
                     if upper > max_x:
                         max_x = upper
 
+                
                 # Also account for true_params if available
-                if self.true_params is not None:
-                    dim_int = int(dim_key)
-                    if dim_int < len(self.true_params):
-                        true_val = self.true_params[dim_int]
-                        if true_val < min_x:
-                            min_x = true_val
-                        if true_val > max_x:
-                            max_x = true_val
-                        # Possibly also account for self.true_ci
-                        if self.true_ci is not None:
-                            ci_low, ci_high = self.true_ci[dim_int]
-                            if ci_low < min_x:
-                                min_x = ci_low
-                            if ci_high > max_x:
-                                max_x = ci_high
+                if seed_result['Ground Truth'] is not None:
+                    true_val = seed_result['Ground Truth'][dim_key]['point_estimate']
+                    if true_val < min_x:
+                        min_x = true_val
+                    if true_val > max_x:
+                        max_x = true_val
+                    # Possibly also account for confidence interval
+                if seed_result['Ground Truth'] is not None:
+                    ci_low, ci_high = seed_result['Ground Truth'][dim_key]['ci'][0], seed_result['Ground Truth'][dim_key]['ci'][1]
+                    if ci_low < min_x:
+                        min_x = ci_low
+                    if ci_high > max_x:
+                        max_x = ci_high
 
             # Store the computed range
             dim_ranges[dim_key] = (min_x, max_x)
@@ -840,6 +846,8 @@ class RealDataExperiment(Experiment):
                 ax = get_subplot(axs, row_idx, col_idx)
                 seed_result = self.results[str(seed_idx)]
                 methods = list(seed_result.keys())
+                # drop ground truth
+                methods = [method for method in methods if method != "Ground Truth"]
                 y_positions = range(len(methods))
 
                 # Plot each method's CI
@@ -852,16 +860,14 @@ class RealDataExperiment(Experiment):
                     ax.plot(point_est, y, "o", color="C0")
 
                 # Plot "true" lines if available
-                if self.true_params is not None:
-                    dim_int = int(dim_key)
-                    if dim_int < len(self.true_params):
-                        ax.axvline(
-                            self.true_params[dim_int], color="black", linestyle="--"
-                        )
-                        if self.true_ci is not None:
-                            ci_low, ci_high = self.true_ci[dim_int]
-                            ax.axvline(ci_low, color="orange", linestyle="--")
-                            ax.axvline(ci_high, color="orange", linestyle="--")
+                if seed_result['Ground Truth'][dim_key]['point_estimate'] is not None:
+                    ax.axvline(
+                            seed_result['Ground Truth'][dim_key]['point_estimate'], color="black", linestyle="--"
+                    )
+                    if seed_result['Ground Truth'][dim_key]['ci'] is not None:
+                        ci_low, ci_high = seed_result['Ground Truth'][dim_key]['ci'][0], seed_result['Ground Truth'][dim_key]['ci'][1]
+                        ax.axvline(ci_low, color="orange", linestyle="--")
+                        ax.axvline(ci_high, color="orange", linestyle="--")
 
                 # Y-ticks show the method names
                 ax.set_yticks(list(y_positions))
