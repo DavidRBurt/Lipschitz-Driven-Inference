@@ -9,6 +9,14 @@ from lipschitz_driven_inference.estimators import Estimator
 from joblib import Parallel, delayed
 from statsmodels.regression.linear_model import OLS
 
+style_dict = {
+    'Ours': {'linestyle': '-', 'linewidth': 3, 'color': 'black', 'marker': 'o'},
+    'GP BCIs': {'linestyle': '--', 'linewidth': 1.5, 'color': 'C0', 'marker': 'x'},
+    'KDEIW': {'linestyle': '-.', 'linewidth': 1.5, 'color': 'C1', 'marker': 'x'},
+    'Sandwich': {'linestyle': ':', 'linewidth': 1.5, 'color': 'C2', 'marker': 'x'},
+    'OLS': {'linestyle': (0, (5, 10)), 'linewidth': 1.5, 'color': 'C3', 'marker': 'x'},
+    'GLS': {'linestyle': (0, (3, 5, 1, 5)), 'linewidth': 1.5, 'color': 'C4', 'marker': 'x'}
+}
 
 class Experiment:
     def __init__(self, name: str, results_dir: Path, dim: int, alpha: float, **kwargs):
@@ -182,22 +190,6 @@ class SimulationExperiment(Experiment):
                     [result[method]["ci_contains_param"] for result in results]
                 )
                 method_coverages[method].append(coverage)
-
-        # Define line styles and widths
-        dashed_styles = ['--', '-.', ':', (0, (5, 10)), (0, (3, 5, 1, 5))]  # Extend if needed
-        style_dict = {}
-        dash_idx = 0
-        for method in methods_sorted:
-            if method.lower() == 'ours':
-                style_dict[method] = {'linestyle': '-', 'linewidth': 3, 'color': 'black', 'marker': 'o'}
-            else:
-                style_dict[method] = {
-                    'linestyle': dashed_styles[dash_idx % len(dashed_styles)],
-                    'linewidth': 1.5,
-                    'color': None,  # Let matplotlib cycle colors
-                    'marker': 'x'
-                }
-                dash_idx += 1
 
         # Create subplots
         fig, axs = plt.subplots(1, 2, figsize=(14, 5), gridspec_kw={'width_ratios': [1, 1]})
