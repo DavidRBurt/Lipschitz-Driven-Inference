@@ -108,7 +108,7 @@ if __name__ == "__main__":
     # Parse arguments using argparse
     parser = basic_parser()
     # update the parser with the arguments for this experiment
-    parser.add_argument("--lipschitz_bound", type=float, default=2 * np.sqrt(2))
+    parser.add_argument("--lipschitz_bound", type=float, default=3 * np.sqrt(2))
     args = parser.parse_args()
     # Set up the experiment
     data_generation_kwargs = {
