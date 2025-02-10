@@ -1,5 +1,5 @@
 from .estimators import Estimator, Dataset, ConfidenceInterval
-from .lipschitz_drive_estimators import (
+from .lipschitz_driven_estimators import (
     LipschitzDrivenEstimator,
     NNLipschitzDrivenEstimator,
 )

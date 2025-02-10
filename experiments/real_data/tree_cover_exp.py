@@ -104,7 +104,7 @@ class TreeCoverExperiment(RealDataExperiment):
         seed: int = 42,
         ):
 
-        fontsize = 20
+        fontsize = 17
         plt.rc('text', usetex=True)
         plt.rc('font', family='serif')
         plt.rc('font', size=fontsize)

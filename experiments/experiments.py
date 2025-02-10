@@ -498,6 +498,12 @@ class RealDataExperiment(Experiment):
             print("No results to plot.")
             return
 
+        # Set font size and latex format
+        fontsize = 20
+        plt.rc("text", usetex=True)
+        plt.rc("font", family="serif")
+        plt.rc("font", size=fontsize)
+
         # (Optional) Import saved data if needed
         if isinstance(self.results, str) or not isinstance(self.results, dict):
             self.results = json_tricks.load(str(Path(self.results_dir, "results.json")))
@@ -641,17 +647,19 @@ class RealDataExperiment(Experiment):
 
             ax_cov.set_ylim(0, 1)
             ax_cov.set_xticks(x_positions)
-            ax_cov.set_xticklabels(all_methods, rotation=45, ha="right")
+            ax_cov.set_xticklabels(all_methods, rotation=45, ha="right", fontsize=fontsize-5)
+            ax_cov.set_yticklabels(ax_cov.get_yticks(), fontsize=fontsize-5)
+
 
             # Get a descriptive title from dim_title_map:
             dim_int = int(d)
             dim_label = dim_title_map.get(dim_int, f"Dimension {d}")
-            ax_cov.set_title(dim_label)
+            ax_cov.set_title(dim_label, fontsize=fontsize)
 
             if col_idx == 0:
-                ax_cov.set_ylabel("Coverage")
+                ax_cov.set_ylabel("Coverage", fontsize=fontsize-5)
             else:
-                ax_cov.set_ylabel("")
+                ax_cov.set_ylabel("", fontsize=fontsize-5)
 
         # -------------------------------------------------------------
         # 7) Bottom row: average CI length bar charts
@@ -679,12 +687,14 @@ class RealDataExperiment(Experiment):
                 )
 
             ax_len.set_xticks(x_positions)
-            ax_len.set_xticklabels(all_methods, rotation=45, ha="right")
+            ax_len.set_xticklabels(all_methods, rotation=45, ha="right", fontsize=fontsize-5)
+            ax_len.set_yticklabels(ax_len.get_yticks(), fontsize=fontsize-5)
+
 
             if col_idx == 0:
-                ax_len.set_ylabel("Average CI Width")
+                ax_len.set_ylabel("Average CI Width", fontsize=fontsize-5)
             else:
-                ax_len.set_ylabel("")
+                ax_len.set_ylabel("", fontsize=fontsize-5)
 
         # -------------------------------------------------------------
         # (8) (Optional) Very bottom row: conservative coverage bar charts
@@ -717,17 +727,19 @@ class RealDataExperiment(Experiment):
 
                 ax_cov.set_ylim(0, 1)
                 ax_cov.set_xticks(x_positions)
-                ax_cov.set_xticklabels(all_methods, rotation=45, ha="right")
+                ax_cov.set_xticklabels(all_methods, rotation=45, ha="right", fontsize=fontsize-5)
+                ax_cov.set_yticklabels(ax_cov.get_yticks(), fontsize=fontsize-5)
+
 
                 # Get a descriptive title from dim_title_map:
                 dim_int = int(d)
                 dim_label = dim_title_map.get(dim_int, f"Dimension {d}")
-                ax_cov.set_title(dim_label)
+                ax_cov.set_title(dim_label, fontsize=fontsize)
 
                 if col_idx == 0:
-                    ax_cov.set_ylabel("Coverage (of point estimate)")
+                    ax_cov.set_ylabel("Coverage (of point estimate)", fontsize=fontsize-5)
                 else:
-                    ax_cov.set_ylabel("")
+                    ax_cov.set_ylabel("", fontsize=fontsize-5)
 
         plt.tight_layout()
         plt.subplots_adjust(top=0.80)
@@ -751,6 +763,12 @@ class RealDataExperiment(Experiment):
         if self.results is None:
             print("No results to plot.")
             return
+
+        # Set font size and latex format
+        fontsize = 20
+        plt.rc("text", usetex=True)
+        plt.rc("font", family="serif")
+        plt.rc("font", size=fontsize)
 
         # If self.results is a path or not loaded, load it
         if isinstance(self.results, str) or not isinstance(self.results, dict):
@@ -870,20 +888,20 @@ class RealDataExperiment(Experiment):
                         ax.axvline(ci_high, color="orange", linestyle="--")
 
                 # Y-ticks show the method names
-                ax.set_yticks(list(y_positions))
-                ax.set_yticklabels(methods)
+                ax.set_yticks(list(y_positions), )
+                ax.set_yticklabels(methods, fontsize=fontsize-5)
 
                 # Label left-most column with "Seed X"
                 if col_idx == 0:
-                    ax.set_ylabel(f"Seed {seed_idx}")
+                    ax.set_ylabel(f"Seed {seed_idx}", fontsize=fontsize-5)
                 else:
-                    ax.set_ylabel("")
+                    ax.set_ylabel("", fontsize=fontsize-5)
 
                 # Label top row with dimension name
                 if row_idx == 0:
                     dim_int = int(dim_key)
                     dim_label = dim_title_map.get(dim_int, f"Dimension {dim_key}")
-                    ax.set_title(dim_label)
+                    ax.set_title(dim_label, fontsize=fontsize-5)
 
         # ------------------------------------------------------------------------
         # 4) Set x-limits on the top subplot in each column (which shares with the column)
