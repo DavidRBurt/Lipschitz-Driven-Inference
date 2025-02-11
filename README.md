@@ -3,10 +3,14 @@ This repository contains the reference implementation of the method described in
 
 **Citation**
 ```
-@misc{burt_2025_lipschitzdriven,
-    authors = {David R. Burt, Renato Berlinghieri, Stephen Bates, and Tamara Broderick},
-    title = {Lipschitz-Driven Inference: Bias-corrected Confidence Intervals for Spatial Linear Models},
-    year = {2025},
+@misc{burt2025lipschitz_driven_inference,
+      title={Lipschitz-Driven Inference: Bias-corrected Confidence Intervals for Spatial Linear Models}, 
+      author={David R. Burt and Renato Berlinghieri and Stephen Bates and Tamara Broderick},
+      year={2025},
+      eprint={2502.06067},
+      archivePrefix={arXiv},
+      primaryClass={stat.ML},
+      url={https://arxiv.org/abs/2502.06067}, 
 }
 ```
 
