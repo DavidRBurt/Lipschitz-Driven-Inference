@@ -25,8 +25,9 @@ class LipschitzDrivenEstimator(Estimator):
         super().__init__(training_data, test_data)
         self.lipschitz_bound = lipschitz_bound
         self.data_on_sphere = data_on_sphere
-        if noise_std is None:
-            self.noise_std = np.sqrt(self.estimate_noise_variance(fast_noise))
+        self.noise_std = (
+            noise_std if noise_std is not None else self.estimate_noise_variance()
+        )
         self._Psi = self._build_Psi()
 
     @staticmethod
@@ -97,7 +98,10 @@ class LipschitzDrivenEstimator(Estimator):
             fast_estimate_variance if fast_noise else estimate_minimum_variance
         )
         return estimate_variance_fn(
-            self.training_data.S, self.training_data.y, self.lipschitz_bound, self.data_on_sphere
+            self.training_data.S,
+            self.training_data.y,
+            self.lipschitz_bound,
+            self.data_on_sphere,
         )
 
     def confidence_interval(self, dim: int, alpha: float = 0.05) -> ConfidenceInterval:
@@ -160,7 +164,7 @@ class LipschitzDrivenEstimator(Estimator):
         Compute the weights w for the linear estimator.
         """
         return self.Psi.T @ self.v(dim)
-    
+
     def sd_estimate(self, dim: int) -> float:
         """
         Compute the standard deviation estimate for the estimator.
